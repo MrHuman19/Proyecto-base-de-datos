@@ -1,0 +1,112 @@
+create table PUBLIC.datos_no_normalizado(
+	Nombre_Departamento varchar(50) NOT NULL,
+	Nombre_municipio varchar(50) NOT NULL,
+	Codigo_Dane varchar(50) NOT NULL,
+	Armas_Medios varchar(50) NOT NULL,
+	Fecha date NOT NULL,
+	Genero varchar(50) NOT NULL,
+	Grupo_Etario varchar(50) NOT NULL,
+	Cantidad_Victimas integer NOT NULL,
+	Delito varchar(150) NOT NULL
+);
+CREATE TABLE PUBLIC.tabla_municipios_departamentos(
+	Region varchar(100) NOT NULL,
+	Codigo_Dane_Departamento integer NOT NULL,
+	Departamento varchar(100) NOT NULL,
+	Codigo_Dane_Municipio integer NOT NULL,
+	Municipio varchar(100) NOT NULL
+);
+
+COPY PUBLIC.datos_no_normalizado FROM 'C:\ib\proyecto\Reporte__Delitos_sexuales_Polic_a_Nacional.csv'DELIMITER ',' CSV HEADER;
+COPY PUBLIC.tabla_municipios_departamentos FROM 'C:\ib\proyecto\Departamentos_y_municipios_de_Colombia.csv'DELIMITER ';' CSV HEADER;
+
+UPDATE tabla_municipios_departamentos set Region = Upper(Region), Departamento = Upper(Departamento), Municipio = Upper(Municipio);
+
+CREATE TABLE PUBLIC.departamento(
+	Codigo_Dane_Departamento integer PRIMARY KEY,
+	Nombre_Departamento varchar(100) NOT NULL
+);
+
+CREATE TABLE PUBLIC.municipio(
+	Codigo_Municipio_Dane integer PRIMARY KEY,
+	Nombre_Municipio varchar(100) NOT NULL,
+	Codigo_Dane_Departamento integer NOT NULL,
+	FOREIGN KEY (Codigo_Dane_Departamento) REFERENCES departamento(Codigo_Dane_Departamento)
+);
+
+CREATE TABLE PUBLIC.Arma_Medio(
+	ID_Arma_Medio serial PRIMARY KEY,
+	Nombre_arma_medio varchar(50) NOT NULL
+);
+
+CREATE TABLE PUBLIC.genero(
+	ID_genero serial PRIMARY KEY,
+	Nombre_genero varchar(50)
+);
+
+CREATE TABLE PUBLIC.grupo_etario(
+	ID_grupo_etario serial PRIMARY KEY,
+	Nombre_grupo_etario varchar(50) 
+);
+
+
+CREATE TABLE PUBLIC.Delito(
+	ID_Delito serial PRIMARY KEY,
+	Nombre_tipo_delito varchar(150) 
+);
+
+
+CREATE TABLE PUBLIC.Delitos_sexuales_Polic_a_Nacional(
+	ID_caso serial PRIMARY KEY,
+	Fecha date NOT NULL,
+	Numero_Victimas integer NOT NULL,
+	ID_Delito integer NOT NULL,
+	ID_Arma_Medio integer NOT NULL,
+	ID_genero integer NOT NULL,
+	ID_grupo_etario integer NOT NULL,
+	Codigo_Dane_municipio integer NOT NULL,
+	FOREIGN KEY (ID_Delito) REFERENCES Delito(ID_Delito),
+	FOREIGN KEY (ID_Arma_Medio) REFERENCES Arma_Medio(ID_Arma_Medio),
+	FOREIGN KEY (ID_genero) REFERENCES genero(ID_genero),
+	FOREIGN KEY (ID_grupo_etario) REFERENCES grupo_etario(ID_grupo_etario),
+	FOREIGN KEY (Codigo_Dane_municipio) REFERENCES Municipio(Codigo_Municipio_Dane)	
+);
+
+INSERT INTO departamento( 
+	SELECT DISTINCT md.Codigo_Dane_Departamento, md.Departamento
+	FROM tabla_municipios_departamentos AS md);
+	
+	
+INSERT INTO municipio(
+	SELECT md.Codigo_Dane_Municipio, md.Municipio, md.Codigo_Dane_Departamento
+	FROM tabla_municipios_departamentos md
+);
+
+
+INSERT INTO Arma_Medio(Nombre_arma_medio )
+	SELECT DISTINCT dnn.Armas_Medios
+	FROM datos_no_normalizado dnn;
+
+	
+INSERT INTO genero(Nombre_genero)
+	SELECT DISTINCT dnn.Genero
+	FROM datos_no_normalizado dnn;
+
+INSERT INTO grupo_etario(Nombre_grupo_etario)
+	SELECT DISTINCT dnn.Grupo_Etario
+	FROM datos_no_normalizado dnn;
+	
+	
+INSERT INTO Delito(Nombre_tipo_delito)
+	SELECT DISTINCT dnn.Delito
+	FROM datos_no_normalizado dnn;
+
+INSERT INTO Delitos_sexuales_Polic_a_Nacional(Fecha,Numero_Victimas,ID_Delito,ID_Arma_Medio,ID_genero,ID_grupo_etario,Codigo_Dane_municipio)
+	select dnn.Fecha,dnn.Cantidad_Victimas,d.ID_Delito,am.ID_Arma_Medio,gn.ID_genero,ge.ID_grupo_etario,mu.Codigo_Municipio_Dane
+	from datos_no_normalizado dnn,Delito d,Arma_Medio am,genero gn,grupo_etario ge,municipio mu
+	where d.Nombre_tipo_delito=dnn.Delito AND am.Nombre_arma_medio=dnn.Armas_Medios AND gn.Nombre_genero=dnn.Genero AND ge.Nombre_grupo_etario=dnn.Grupo_Etario AND mu.Nombre_Municipio=dnn.Nombre_municipio;
+
+DROP TABLE datos_no_normalizado;
+DROP TABLE tabla_municipios_departamentos;
+SELECT *
+FROM Delitos_sexuales_Polic_a_Nacional;
