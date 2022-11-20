@@ -1,43 +1,23 @@
 import psycopg2
-try:
-    connection=psycopg2.connect(
-        host='localhost',
-        user='postgres',
-        password='123456789',
-        database='PROYECTO'
-    )
-    print("CONEXION EXITOSA")
-    cursor=connection.cursor()
-    cursor.execute("SELECT version()")
-    row=cursor.fetchone()
-    print(row)
-    cursor.execute("SELECT * FROM Delitos_sexuales_Polic_a_Nacional")
-    row=cursor.fetchall()
-    for row in row:
-        print(row)
-    cursor.execute("SELECT * FROM arma_medio")
-    row=cursor.fetchall()
-    for row in row:
-        print(row)
-    cursor.execute("SELECT * FROM delito")
-    row=cursor.fetchall()
-    for row in row:
-        print(row)
-    cursor.execute("SELECT * FROM departamento")
-    row=cursor.fetchall()
-    for row in row:
-        print(row)
-    cursor.execute("SELECT * FROM genero")
-    row=cursor.fetchall()
-    for row in row:
-        print(row)
-    cursor.execute("SELECT * FROM grupo_etario")
-    row=cursor.fetchall()
-    for row in row:
-        print(row)
-    cursor.execute("SELECT * FROM municipio")
-    row=cursor.fetchall()
-    for row in row:
-        print(row)            
-except Exception as ex:
-    print(ex)
+
+class Connection:
+    
+    def __init__(self):
+        self.connection = None
+    
+    def openConnection(self):
+        try:
+            self.connection = psycopg2.connect(user="postgres",
+	                                               password="123456789",
+	                                               database="PROYECTO",
+	                                               host="localhost",
+	                                               port="5432")
+        except Exception as e:
+            print (e)
+
+    def closeConnection(self):
+        self.connection.close()
+    
+    def cursor(self):
+        return self.connection
+    
